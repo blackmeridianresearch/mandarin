@@ -64,6 +64,13 @@ func (c Config) MarshalTOML() (interface{}, error) {
 		OverrideVerkle          *uint64       `toml:",omitempty"`
 		TxSyncDefaultTimeout    time.Duration `toml:",omitempty"`
 		TxSyncMaxTimeout        time.Duration `toml:",omitempty"`
+		EnableGRPC              bool
+		GRPCHost                string
+		GRPCPort                int
+		EnableHotCache          bool
+		HotCacheShadowMode      bool
+		HotCacheWatchlist       []common.Address
+		HotCacheMaxSnapshots    int
 	}
 	var enc Config
 	enc.Genesis = c.Genesis
@@ -113,6 +120,13 @@ func (c Config) MarshalTOML() (interface{}, error) {
 	enc.OverrideVerkle = c.OverrideVerkle
 	enc.TxSyncDefaultTimeout = c.TxSyncDefaultTimeout
 	enc.TxSyncMaxTimeout = c.TxSyncMaxTimeout
+	enc.EnableGRPC = c.EnableGRPC
+	enc.GRPCHost = c.GRPCHost
+	enc.GRPCPort = c.GRPCPort
+	enc.EnableHotCache = c.EnableHotCache
+	enc.HotCacheShadowMode = c.HotCacheShadowMode
+	enc.HotCacheWatchlist = c.HotCacheWatchlist
+	enc.HotCacheMaxSnapshots = c.HotCacheMaxSnapshots
 	return &enc, nil
 }
 
@@ -166,6 +180,13 @@ func (c *Config) UnmarshalTOML(unmarshal func(interface{}) error) error {
 		OverrideVerkle          *uint64        `toml:",omitempty"`
 		TxSyncDefaultTimeout    *time.Duration `toml:",omitempty"`
 		TxSyncMaxTimeout        *time.Duration `toml:",omitempty"`
+		EnableGRPC              *bool
+		GRPCHost                *string
+		GRPCPort                *int
+		EnableHotCache          *bool
+		HotCacheShadowMode      *bool
+		HotCacheWatchlist       []common.Address
+		HotCacheMaxSnapshots    *int
 	}
 	var dec Config
 	if err := unmarshal(&dec); err != nil {
@@ -311,6 +332,27 @@ func (c *Config) UnmarshalTOML(unmarshal func(interface{}) error) error {
 	}
 	if dec.TxSyncMaxTimeout != nil {
 		c.TxSyncMaxTimeout = *dec.TxSyncMaxTimeout
+	}
+	if dec.EnableGRPC != nil {
+		c.EnableGRPC = *dec.EnableGRPC
+	}
+	if dec.GRPCHost != nil {
+		c.GRPCHost = *dec.GRPCHost
+	}
+	if dec.GRPCPort != nil {
+		c.GRPCPort = *dec.GRPCPort
+	}
+	if dec.EnableHotCache != nil {
+		c.EnableHotCache = *dec.EnableHotCache
+	}
+	if dec.HotCacheShadowMode != nil {
+		c.HotCacheShadowMode = *dec.HotCacheShadowMode
+	}
+	if dec.HotCacheWatchlist != nil {
+		c.HotCacheWatchlist = dec.HotCacheWatchlist
+	}
+	if dec.HotCacheMaxSnapshots != nil {
+		c.HotCacheMaxSnapshots = *dec.HotCacheMaxSnapshots
 	}
 	return nil
 }

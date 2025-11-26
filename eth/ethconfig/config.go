@@ -75,6 +75,10 @@ var Defaults = Config{
 	EnableGRPC:           false, // Disabled by default
 	GRPCHost:             "localhost",
 	GRPCPort:             9090,
+	EnableHotCache:       false, // Disabled by default - HIGH RISK feature
+	HotCacheShadowMode:   true,  // Always validate in shadow mode initially
+	HotCacheWatchlist:    []common.Address{},
+	HotCacheMaxSnapshots: 64,
 }
 
 //go:generate go run github.com/fjl/gencodec -type Config -formats toml -out gen_config.go
@@ -197,6 +201,12 @@ type Config struct {
 	EnableGRPC bool   // Whether to enable the gRPC server
 	GRPCHost   string // gRPC server host (default: localhost)
 	GRPCPort   int    // gRPC server port (default: 9090)
+	
+	// Hot state cache options for sub-microsecond DeFi contract state access
+	EnableHotCache       bool             // Whether to enable the hot state cache (HIGH RISK - start in shadow mode)
+	HotCacheShadowMode   bool             // Validate cache against canonical state (recommended for initial deployment)
+	HotCacheWatchlist    []common.Address // Contract addresses to cache (e.g., Uniswap pools, Aave markets)
+	HotCacheMaxSnapshots int              // Maximum number of historical snapshots for reorg protection (default: 64)
 }
 
 // CreateConsensusEngine creates a consensus engine for the given chain config.

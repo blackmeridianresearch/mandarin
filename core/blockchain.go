@@ -199,6 +199,12 @@ type BlockChainConfig struct {
 
 	// StateSizeTracking indicates whether the state size tracking is enabled.
 	StateSizeTracking bool
+	
+	// Hot state cache configuration
+	EnableHotCache       bool
+	HotCacheShadowMode   bool
+	HotCacheWatchlist    []common.Address
+	HotCacheMaxSnapshots int
 }
 
 // DefaultConfig returns the default config.
@@ -399,8 +405,17 @@ func NewBlockChain(db ethdb.Database, genesis *Genesis, engine consensus.Engine,
 	bc.prefetcher = newStatePrefetcher(chainConfig, bc.hc)
 	bc.processor = NewStateProcessor(bc.hc)
 	
-	// Initialize hot state cache (disabled by default)
-	bc.hotCache = hotcache.New(hotcache.DefaultConfig())
+	// Initialize hot state cache with configuration
+	hotCacheConfig := hotcache.Config{
+		Enabled:      cfg.EnableHotCache,
+		Watchlist:    cfg.HotCacheWatchlist,
+		ShadowMode:   cfg.HotCacheShadowMode,
+		MaxSnapshots: cfg.HotCacheMaxSnapshots,
+	}
+	if hotCacheConfig.MaxSnapshots == 0 {
+		hotCacheConfig.MaxSnapshots = 64 // Default
+	}
+	bc.hotCache = hotcache.New(hotCacheConfig)
 
 	genesisHeader := bc.GetHeaderByNumber(0)
 	if genesisHeader == nil {
