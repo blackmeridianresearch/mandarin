@@ -1,0 +1,64 @@
+# Example Mandarin configuration for Sepolia Testnet with Hot State Cache
+#
+# This configuration is for testing the hot state cache on Sepolia before
+# deploying to mainnet. Perfect for validating the feature in a safe environment.
+
+[Eth]
+# Network
+NetworkId = 11155111  # Sepolia chain ID
+
+# Hot State Cache Configuration (TESTING)
+EnableHotCache = true
+HotCacheShadowMode = true  # Always enabled for testnet
+HotCacheMaxSnapshots = 64
+
+# Sepolia Uniswap V2 Pools (add discovered pool addresses here)
+HotCacheWatchlist = [
+    # Example format:
+    # "0x...",  # WETH/USDC pool on Sepolia
+    # "0x...",  # WETH/DAI pool on Sepolia
+    
+    # To find pools on Sepolia:
+    # 1. Use Uniswap V2 Factory: 0xF62c03E08ada871A0bEb309762E260a7a6a880E6
+    # 2. Call getPair(tokenA, tokenB) to get pair addresses
+    # 3. Add discovered addresses here
+]
+
+# Standard Testnet Settings
+SyncMode = "snap"
+DatabaseCache = 1024
+TrieCleanCache = 256
+TrieDirtyCache = 128
+
+# RPC Settings
+HTTPHost = "localhost"
+HTTPPort = 8545
+HTTPModules = ["eth", "net", "web3", "debug", "personal"]
+
+# Testnet Performance
+MaxPeers = 25
+TxPool.GlobalSlots = 4096
+
+# Higher verbosity for testing
+Verbosity = 4
+
+# TESTING GUIDE:
+# 1. Deploy test pools on Sepolia or find existing ones
+# 2. Add pool addresses to HotCacheWatchlist above
+# 3. Run: geth --sepolia --config sepolia.toml --datadir ./sepolia-data
+# 4. Monitor logs for validation errors
+# 5. Test with your trading bot
+# 6. After 1+ week of stability, deploy to mainnet
+
+# FINDING SEPOLIA POOLS:
+# Option 1: Use Etherscan
+#   https://sepolia.etherscan.io/address/0xF62c03E08ada871A0bEb309762E260a7a6a880E6
+#
+# Option 2: Use cast (Foundry)
+#   cast call 0xF62c03E08ada871A0bEb309762E260a7a6a880E6 \
+#     "getPair(address,address)(address)" \
+#     WETH_ADDRESS USDC_ADDRESS \
+#     --rpc-url https://sepolia.infura.io/v3/YOUR_KEY
+#
+# Option 3: Deploy your own test pools
+
