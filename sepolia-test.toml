@@ -1,0 +1,25 @@
+# Mandarin Sepolia Test Configuration
+# Testing hot state cache on testnet
+
+[Eth]
+# Network
+NetworkId = 11155111
+
+# Hot State Cache (ENABLED FOR TESTING)
+EnableHotCache = true
+HotCacheShadowMode = true
+HotCacheMaxSnapshots = 64
+
+# Initially empty watchlist - we'll discover pools after sync starts
+HotCacheWatchlist = []
+
+# Sync Settings
+SyncMode = "snap"
+DatabaseCache = 2048
+TrieCleanCache = 512
+TrieDirtyCache = 256
+
+# Logging
+Verbosity = 4
+
+

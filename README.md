@@ -12,17 +12,40 @@ A Geth for optimized so that
 
 Mandarin is a performance-optimized fork of Go Ethereum designed for low-latency trading operations and MEV workflows. Built on Geth's solid foundation, Mandarin adds specialized features for co-located trading engines while maintaining full compatibility with the Ethereum protocol.
 
+> [!CAUTION]
+> **EXPERIMENTAL SOFTWARE - USE AT YOUR OWN RISK**
+>
+> This software is highly experimental and contains sharp edges that can lead to loss of funds or incorrect trading decisions.
+
+> [!WARNING]
+> **Critical Risks:**
+>
+> - **Hot State Cache Risk**: The sub-microsecond state cache bypasses normal state access patterns and operates on cached data that may become stale during chain reorganizations. While shadow mode validation is implemented, cache bugs could result in trading on incorrect state data, leading to failed transactions or unprofitable trades.
+>
+> - **Cache Invalidation**: The hot cache makes aggressive assumptions about state consistency. During reorgs or if decoders contain bugs, you may read stale or incorrect contract state. Always validate critical state reads through canonical paths before executing high-value transactions.
+>
+> - **Bundle Simulation**: Bundle simulation results are not guaranteed to match actual execution if network conditions, gas prices, or other transactions change between simulation and inclusion. Do not rely solely on simulation for financial decisions.
+>
+> - **Custom Ordering Strategies**: Incorrect ordering strategy implementations can cause block building failures, consensus violations, or MEV extraction issues. Test thoroughly on testnets before production use.
+>
+> - **Production Use**: This fork is intended for sophisticated operators who understand the Ethereum protocol deeply. Do not run this on mainnet with significant funds or as a public RPC endpoint without extensive testing and monitoring.
+>
+> - **No Warranty**: This software is provided "as is" without warranty of any kind. The authors are not responsible for any financial losses incurred.
+
+> [!TIP]
+> **Recommended Approach**: Test all features on Sepolia or Holesky testnets first. Use shadow mode for hot cache validation. Monitor logs carefully. Start with small amounts.
+
 ### Key Enhancements
 
 **Bundle Support:** Submit and simulate transaction bundles with microsecond-scale latency. Bundles support timestamp constraints, revertible transactions, and profit simulation.
 
 **Custom Transaction Ordering:** Pluggable ordering strategies allow sophisticated block building beyond simple gas price sorting.
 
-**Low-Latency APIs:** Binary gRPC endpoints alongside traditional JSON-RPC for 10x faster operations including batch storage reads and bundle simulation.
+**Low-Latency APIs:** Binary gRPC endpoints alongside traditional JSON-RPC for 10x faster operations including batch storage reads and bundle simulation. gRPC is disabled by default and requires explicit flags (`--grpc`, `--grpc.addr`, `--grpc.port`) to enable.
 
 **Backward Compatible:** All Geth features remain unchanged. Enhancements are opt-in and don't affect standard node operation.
 
-See `PHASE1_SUMMARY.md` for detailed implementation notes and `roadmap.md` for future development plans.
+For testnet deployment instructions, see `SEPOLIA_TESTNET.md`. For hot state cache configuration examples, see `core/state/hotcache/example_configs/`.
 
 ---
 
