@@ -39,6 +39,7 @@ import (
 	"github.com/ethereum/go-ethereum/core/history"
 	"github.com/ethereum/go-ethereum/core/rawdb"
 	"github.com/ethereum/go-ethereum/core/state"
+	"github.com/ethereum/go-ethereum/core/state/hotcache"
 	"github.com/ethereum/go-ethereum/core/state/snapshot"
 	"github.com/ethereum/go-ethereum/core/stateless"
 	"github.com/ethereum/go-ethereum/core/tracing"
@@ -198,6 +199,12 @@ type BlockChainConfig struct {
 
 	// StateSizeTracking indicates whether the state size tracking is enabled.
 	StateSizeTracking bool
+	
+	// Hot state cache configuration
+	EnableHotCache       bool
+	HotCacheShadowMode   bool
+	HotCacheWatchlist    []common.Address
+	HotCacheMaxSnapshots int
 }
 
 // DefaultConfig returns the default config.
@@ -327,6 +334,8 @@ type BlockChain struct {
 	txLookupLock  sync.RWMutex
 	txLookupCache *lru.Cache[common.Hash, txLookup]
 
+	hotCache *hotcache.Cache // Hot state cache for frequently-accessed DeFi contracts
+
 	stopping      atomic.Bool // false if chain is running, true when stopped
 	procInterrupt atomic.Bool // interrupt signaler for block processing
 
@@ -395,6 +404,18 @@ func NewBlockChain(db ethdb.Database, genesis *Genesis, engine consensus.Engine,
 	bc.validator = NewBlockValidator(chainConfig, bc)
 	bc.prefetcher = newStatePrefetcher(chainConfig, bc.hc)
 	bc.processor = NewStateProcessor(bc.hc)
+	
+	// Initialize hot state cache with configuration
+	hotCacheConfig := hotcache.Config{
+		Enabled:      cfg.EnableHotCache,
+		Watchlist:    cfg.HotCacheWatchlist,
+		ShadowMode:   cfg.HotCacheShadowMode,
+		MaxSnapshots: cfg.HotCacheMaxSnapshots,
+	}
+	if hotCacheConfig.MaxSnapshots == 0 {
+		hotCacheConfig.MaxSnapshots = 64 // Default
+	}
+	bc.hotCache = hotcache.New(hotCacheConfig)
 
 	genesisHeader := bc.GetHeaderByNumber(0)
 	if genesisHeader == nil {
@@ -1689,6 +1710,20 @@ func (bc *BlockChain) writeBlockAndSetHead(block *types.Block, receipts []*types
 
 	// Set new head.
 	bc.writeHeadBlock(block)
+	
+	// Update hot state cache if enabled
+	if bc.hotCache.IsEnabled() {
+		if err := bc.hotCache.Update(block.Header(), hotcache.NewStateDBReader(state)); err != nil {
+			log.Warn("Failed to update hot cache", "block", block.NumberU64(), "err", err)
+		}
+		
+		// Validate cache in shadow mode
+		if bc.hotCache.IsEnabled() {
+			if err := bc.hotCache.Validate(hotcache.NewStateDBReader(state)); err != nil {
+				log.Error("Hot cache validation failed", "block", block.NumberU64(), "err", err)
+			}
+		}
+	}
 
 	bc.chainFeed.Send(ChainEvent{
 		Header:       block.Header(),
@@ -2555,6 +2590,19 @@ func (bc *BlockChain) reorg(oldHead *types.Header, newHead *types.Header) error 
 
 	// Release the tx-lookup lock after mutation.
 	bc.txLookupLock.Unlock()
+	
+	// Handle hot cache reorg if enabled
+	if bc.hotCache.IsEnabled() {
+		// Get the latest state at the new head to use for replay
+		newHeadState, err := bc.StateAt(bc.CurrentBlock().Root)
+		if err != nil {
+			log.Warn("Failed to get state for hot cache reorg", "err", err)
+		} else {
+			if err := bc.hotCache.HandleReorg(oldChain, newChain, hotcache.NewStateDBReader(newHeadState)); err != nil {
+				log.Error("Failed to handle hot cache reorg", "err", err)
+			}
+		}
+	}
 
 	return nil
 }
